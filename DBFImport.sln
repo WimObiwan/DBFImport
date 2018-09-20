@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2026
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBFImport", "DBFImport\DBFImport.csproj", "{745208AD-791D-402B-8FB3-B89890A1A726}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{745208AD-791D-402B-8FB3-B89890A1A726}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{745208AD-791D-402B-8FB3-B89890A1A726}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{745208AD-791D-402B-8FB3-B89890A1A726}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{745208AD-791D-402B-8FB3-B89890A1A726}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7A27362E-7B7D-48F7-BF50-E0A24BF3FAA0}
+	EndGlobalSection
+EndGlobal
