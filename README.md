@@ -1,6 +1,12 @@
 # DBFImport
 A simple tool to import old DBF files into SQL Server.
-DBF files are used by dBase (Aston Tate), FoxPro (Fox Software - Microsoft), ...
+
+DBF files were/are used by 
+ * dBase (Ashton Tate)
+ * FoxBASE/FoxPro (Fox Software) / Visual FoxPro (Microsoft)
+ * Clipper (Nantucket / Computer Associates)
+ * ...
+
 Built on DotNet Core 2.1, works on Windows, Linux, Mac.
 
 # Usage
