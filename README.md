@@ -5,10 +5,10 @@ Built on DotNet Core 2.1, works on Windows, Linux, Mac.
 
 # Usage
 
-    dotnet DBFImport.dll [path] [server] [database]
-    dotnet DBFImport.dll [path] [conn]
+    dotnet DBFImport.dll [dbfpath] [server] [database]
+    dotnet DBFImport.dll [dbfpath] [conn]
 
-       path      file path, directory path or file mask of the DBF file(s)
+       dbfpath   file path, directory path or file mask of the DBF file(s)
        server    SQL Server hostname or IP address (optionally including instance name)
        database  name of existing database
        conn      valid connection string
