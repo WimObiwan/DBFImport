@@ -17,7 +17,7 @@ The database must be an existing database.  Every DBF file is imported into a da
 
 # Example
 
-    DBFImporter.exe "c:\My DBF files\*.DBF" DEVSERVER\SQL2017 ImportedDbfFiles
+    dotnet DBFImport.dll "c:\My DBF files\*.DBF" DEVSERVER\SQL2017 ImportedDbfFiles
 
 # Download & installation
  
@@ -26,6 +26,7 @@ The database must be an existing database.  Every DBF file is imported into a da
  * Download & unzip the asset: DBFImport.zip
 
 # Known issues & To do's
+
 Any [issues](https://github.com/WimObiwan/DBFImport/issues) or [pull requests](https://github.com/WimObiwan/DBFImport/pulls) are welcome.
 
  * Not alle datatypes from the xBase flavors are implemented.
