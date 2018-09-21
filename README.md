@@ -30,7 +30,7 @@ Any [issues](https://github.com/WimObiwan/DBFImport/issues) or [pull requests](h
 
  * Not alle datatypes from the xBase flavors are implemented.
  * Memo types (and DBT files) are not yet implemented.
- * Currently only SQL Server is supported
+ * Currently only SQL Server is supported (any flavor/version should work)
 
 # References
 
