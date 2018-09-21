@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Reflection.Metadata;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 
 namespace DBFImport
@@ -14,7 +15,8 @@ namespace DBFImport
     {
         static int Main(string[] args)
         {
-            Console.WriteLine("DBFImporter 1.0");
+            Version version = Assembly.GetEntryAssembly().GetName().Version;
+            Console.WriteLine($"DBFImporter {version.Major}.{version.Minor}.{version.Build}");
 
             if (args.Length < 2 || args.Length > 3)
             {
