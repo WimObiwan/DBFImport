@@ -101,12 +101,13 @@ namespace DBFImport
                 {
                     string table = Path.GetFileNameWithoutExtension(filename);
 
-                    Console.WriteLine($"  LastUpdate: {dbfFileStream.Header.LastUpdate.ToShortDateString()}");
-                    Console.WriteLine($"  Fields:     {dbfFileStream.Header.FieldCount}");
-                    Console.WriteLine($"  Records:    {dbfFileStream.Header.RecordCount}");
+                    Console.WriteLine($"  LastUpdate:       {dbfFileStream.Header.LastUpdate.ToShortDateString()}");
+                    Console.WriteLine($"  Fields:           {dbfFileStream.Header.FieldCount}");
+                    Console.WriteLine($"  Records:          {dbfFileStream.Header.RecordCount}");
 
-                    int insertCount = CreateTable(connectionString, table, dbfFileStream.FieldDescriptors, dbfFileStream.Records);
-                    Console.WriteLine($"  Inserted:   {insertCount}");
+                    (int insertCount, int deletedCount) = CreateTable(connectionString, table, dbfFileStream.FieldDescriptors, dbfFileStream.Records);
+                    Console.WriteLine($"  Inserted:         {insertCount}");
+                    Console.WriteLine($"  MarkedAsDeleted:  {deletedCount}");
                 }
 
                 result = true;
@@ -133,7 +134,7 @@ namespace DBFImport
             return result;
         }
 
-        private static int CreateTable(string connectionString, string table, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
+        private static (int insertedCount, int deletedCount) CreateTable(string connectionString, string table, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
             IEnumerable<DbfRecord> records)
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -219,11 +220,14 @@ namespace DBFImport
 
                         sb.AppendLine($")");
                         cmd.CommandText = sb.ToString();
-                        int insertCount = 0;
+                        int insertCount = 0, deletedCount = 0;
                         foreach (var record in records)
                         {
                             if (record.Deleted)
+                            {
+                                deletedCount++;
                                 continue;
+                            }
 
                             try
                             {
@@ -243,7 +247,7 @@ namespace DBFImport
                             }
                         }
 
-                        return insertCount;
+                        return (insertCount, deletedCount);
                     }
                 }
                 catch (Exception e)
