@@ -39,6 +39,19 @@ Any [issues](https://github.com/WimObiwan/DBFImport/issues) or [pull requests](h
  * Memo types (and DBT files) are not yet implemented.
  * Currently only SQL Server is supported (any flavor/version should work)
 
+# Alternatives
+
+There are alternatives:
+
+ * [Microsoft OLE DB Provider for Visual FoxPro 9.0 (VfpOleDB.dll)](https://www.microsoft.com/en-us/download/details.aspx?id=14839)
+ * [Visual FoxPro ODBC Driver](https://docs.microsoft.com/en-us/sql/odbc/microsoft/visual-foxpro-odbc-driver?view=sql-server-2017)
+ * Commercial products
+ 
+ For me these were insufficient because of:
+ 
+ * incompatibilities between 32-bit drivers and 64-bit SQL Sever
+ * instabilities of SQL Server when using some of the drivers in linked servers
+
 # References
 
  * https://en.wikipedia.org/wiki/.dbf
