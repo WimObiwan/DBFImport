@@ -108,7 +108,7 @@ namespace DBFImport
     {
         private FileStream fileStream;
         private BinaryReader binaryReader;
-        private int recordNo;
+        private Encoding textEncoding;
 
         public DbfHeader Header { get; }
 
@@ -126,6 +126,10 @@ namespace DBFImport
 
         public DbfFileStream(string filename)
         {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            //textEncoding = Encoding.GetEncoding(850);
+            textEncoding = Encoding.GetEncoding(1252);
+
             fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read);
             binaryReader = new BinaryReader(fileStream);
 
@@ -437,7 +441,7 @@ namespace DBFImport
 
         private string ReadFieldText(byte[] data)
         {
-            return System.Text.Encoding.ASCII.GetString(data).TrimEnd();
+            return textEncoding.GetString(data).TrimEnd();
         }
 
     }
