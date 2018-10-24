@@ -28,6 +28,37 @@ namespace DBFImport
         public int Length { get; set; }
         public byte DecimalCount { get; set; }
 
+        public Type GetDataType()
+        {
+            switch (TypeChar)
+            {
+                case 'C':
+                    return typeof(string);
+                case 'I':
+                    return typeof(int);
+                case 'N':
+                    return typeof(decimal);
+                case 'L':
+                    return typeof(bool);
+                case 'D':
+                    return typeof(DateTime);
+                case 'M':
+                    return typeof(string); //?
+                case 'T':
+                    return typeof(DateTime);
+                case 'W': //?
+                    return typeof(string); //?
+                case '0':
+                    return typeof(int);
+                case 'G':
+                    return typeof(string); //?
+                //case 'F':
+                //    return "FLOAT";
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         public string GetSqlDataType()
         {
             switch (TypeChar)

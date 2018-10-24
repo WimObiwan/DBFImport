@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Reflection.Metadata;
@@ -136,7 +137,8 @@ namespace DBFImport
             return result;
         }
 
-        private static (int insertedCount, int deletedCount) CreateTable(string connectionString, string table, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
+        private static (int insertedCount, int deletedCount) CreateTable(string connectionString, string table, 
+            IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
             IEnumerable<DbfRecord> records)
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -190,72 +192,135 @@ namespace DBFImport
 
                 try
                 {
-                    using (SqlCommand cmd = conn.CreateCommand())
-                    {
-                        StringBuilder sb = new StringBuilder();
-                        sb.AppendLine($"INSERT INTO [{table}] (");
-                        bool first = true;
-                        foreach (var fieldDescriptor in fieldDescriptors)
-                        {
-                            if (first)
-                                first = false;
-                            else
-                                sb.Append(", ");
-                            sb.Append($"[{fieldDescriptor.Name}]");
-                        }
-
-                        sb.AppendLine($") VALUES (");
-                        int no = 0;
-                        first = true;
-                        foreach (var fieldDescriptor in fieldDescriptors)
-                        {
-                            if (first)
-                                first = false;
-                            else
-                                sb.Append(", ");
-                            sb.Append($"@p{no}");
-
-                            cmd.Parameters.Add(fieldDescriptor.GetSqlParameter($"@p{no}"));
-
-                            no++;
-                        }
-
-                        sb.AppendLine($")");
-                        cmd.CommandText = sb.ToString();
-                        int insertCount = 0, deletedCount = 0;
-                        foreach (var record in records)
-                        {
-                            if (record.Deleted)
-                            {
-                                deletedCount++;
-                                continue;
-                            }
-
-                            try
-                            {
-                                no = 0;
-                                foreach (var field in record.Fields)
-                                {
-                                    cmd.Parameters[$"@p{no}"].Value = field ?? DBNull.Value;
-                                    no++;
-                                }
-
-                                cmd.ExecuteNonQuery();
-                                insertCount++;
-                            }
-                            catch (Exception e)
-                            {
-                                throw new Exception($"Failed to insert record #{record.RecordNo + 1} into database, {insertCount} already inserted", e);
-                            }
-                        }
-
-                        return (insertCount, deletedCount);
-                    }
+                    //return FillTableUsingSqlCommand(conn, table, fieldDescriptors, records);
+                    return FillTableUsingBulkCopy(conn, table, fieldDescriptors, records);
                 }
                 catch (Exception e)
                 {
                     throw new Exception($"Failed to fill table ${table}", e);
                 }
+            }
+        }
+
+        private static (int insertedCount, int deletedCount) FillTableUsingBulkCopy(
+            SqlConnection conn, string table, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
+            IEnumerable<DbfRecord> records)
+        {
+            using (SqlBulkCopy bcp =  new SqlBulkCopy(conn))
+            {
+                bcp.DestinationTableName = table;
+                bcp.BulkCopyTimeout = 1800;
+
+                DataTable dataTable = new DataTable();
+
+                foreach (var fieldDescriptor in fieldDescriptors)
+                {
+                    dataTable.Columns.Add(fieldDescriptor.Name, fieldDescriptor.GetDataType());
+                }
+
+                int insertCount = 0, deletedCount = 0;
+                foreach (var record in records)
+                {
+                    if (record.Deleted)
+                    {
+                        deletedCount++;
+                        continue;
+                    }
+
+                    var row = dataTable.NewRow();
+
+                    for (int col = 0; col < fieldDescriptors.Count; col++)
+                    {
+                        row[col] = record.Fields[col] ?? DBNull.Value; ;
+                    }
+
+                    dataTable.Rows.Add(row);
+                    insertCount++;
+                }
+
+                bcp.WriteToServer(dataTable);
+
+                return (insertCount, deletedCount);
+
+                //BcpRecordAdaptor dataTable = new BcpRecordAdaptor(fieldDescriptors, records);
+
+                //bcp.WriteToServer(dataTable);
+
+                //return (dataTable.InsertCount, dataTable.DeletedCount);
+            }
+        }
+
+        private static (int insertedCount, int deletedCount) FillTableUsingSqlCommand(
+            SqlConnection conn, string table, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
+            IEnumerable<DbfRecord> records)
+        {
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine($"INSERT INTO [{table}] (");
+                bool first = true;
+                foreach (var fieldDescriptor in fieldDescriptors)
+                {
+                    if (first)
+                        first = false;
+                    else
+                        sb.Append(", ");
+                    sb.Append($"[{fieldDescriptor.Name}]");
+                }
+
+                sb.AppendLine($") VALUES (");
+                int no = 0;
+                first = true;
+                foreach (var fieldDescriptor in fieldDescriptors)
+                {
+                    if (first)
+                        first = false;
+                    else
+                        sb.Append(", ");
+                    sb.Append($"@p{no}");
+
+                    cmd.Parameters.Add(fieldDescriptor.GetSqlParameter($"@p{no}"));
+
+                    no++;
+                }
+
+                sb.AppendLine($")");
+                cmd.CommandText = sb.ToString();
+                int insertCount = 0, deletedCount = 0;
+                using (var transaction = conn.BeginTransaction())
+                {
+                    foreach (var record in records)
+                    {
+                        if (record.Deleted)
+                        {
+                            deletedCount++;
+                            continue;
+                        }
+
+                        try
+                        {
+                            no = 0;
+                            foreach (var field in record.Fields)
+                            {
+                                cmd.Parameters[$"@p{no}"].Value = field ?? DBNull.Value;
+                                no++;
+                            }
+
+                            cmd.Transaction = transaction;
+                            cmd.ExecuteNonQuery();
+                            insertCount++;
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception(
+                                $"Failed to insert record #{record.RecordNo + 1} into database, {insertCount} already inserted",
+                                e);
+                        }
+                    }
+                    transaction.Commit();
+                }
+
+                return (insertCount, deletedCount);
             }
         }
     }
