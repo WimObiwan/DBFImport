@@ -9,48 +9,73 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using CommandLine;
+using CommandLine.Text;
 
 namespace DBFImport
 {
     class Program
     {
-        static int Main(string[] args)
+
+        class Options
         {
-            Version version = Assembly.GetEntryAssembly().GetName().Version;
-            Console.WriteLine($"DBFImporter {version.Major}.{version.Minor}.{version.Build}");
+            [Option('p', "path", Required = true, HelpText = "Path to DBF file(s)")]
+            public string DbfPath { get; set; }
 
-            if (args.Length < 2 || args.Length > 3)
+            [Option('s', "server", SetName = "server&db", Required = true, HelpText = "SQL Server (and instance)")]
+            public string Server { get; set; }
+
+            [Option('d', "database", SetName = "server&db", Required = true, HelpText = "Database name")]
+            public string Database { get; set; }
+
+            [Option('c', "connectionstring", SetName = "connstring", Required = true, HelpText = "Database connection string")]
+            public string ConnectionString { get; set; }
+
+            [Usage]
+            public static IEnumerable<Example> Examples
             {
-                Console.WriteLine();
-                Console.WriteLine("Usage: DBFImporter.exe [path] [server] [database]");
-                Console.WriteLine("Usage: DBFImporter.exe [path] [conn]");
-                Console.WriteLine();
-                Console.WriteLine("   path      file path, directory path or file mask of the DBF file(s)");
-                Console.WriteLine("   server    SQL Server hostname or IP address (optionally including instance name)");
-                Console.WriteLine("   database  name of existing database");
-                Console.WriteLine("   conn      valid connection string");
-                Console.WriteLine();
-                Console.WriteLine(@"Example: DBFImporter.exe ""c:\My DBF files\*.DBF"" DEVSERVER\SQL2017 ImportedDbfFiles");
-                return 1;
+                get
+                {
+                    return new List<Example>() {
+                        new Example("Imports DBF files",
+                            new Options
+                            {
+                                DbfPath = @"c:\Data\My DBF files\*.DBF",
+                                Server = @"DEVSERVER\SQL2017",
+                                Database = "ImportedDbfFiles",
+                            }),
+                        new Example("Imports DBF files, and connect to SQL Server using connection string",
+                            new Options
+                            {
+                                DbfPath = @"c:\Data\My DBF files\*.DBF",
+                                ConnectionString = @"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword",
+                            }),
+                    };
+                }
             }
+        }
 
-            string path = args[0];
-            string connectionString;
-            if (args.Length == 3)
+        public static int Main(string[] args)
+        {
+            return Parser.Default
+                .ParseArguments<Options>(args)
+                .MapResult(
+                    o => RunWithOptions(o),
+                    errs => 1);
+        }
+
+        private static int RunWithOptions(Options options)
+        {
+            string path = options.DbfPath;
+
+            string connectionString = options.ConnectionString;
+            if (string.IsNullOrEmpty(connectionString))
             {
-                string server = args[1];
-                string database = args[2];
-
-                System.Data.SqlClient.SqlConnectionStringBuilder connectionStringBuilder =
-                    new SqlConnectionStringBuilder();
-                connectionStringBuilder.DataSource = server;
-                connectionStringBuilder.InitialCatalog = database;
+                SqlConnectionStringBuilder connectionStringBuilder = new SqlConnectionStringBuilder();
+                connectionStringBuilder.DataSource = options.Server;
+                connectionStringBuilder.InitialCatalog = options.Database;
                 connectionStringBuilder.IntegratedSecurity = true;
                 connectionString = connectionStringBuilder.ConnectionString;
-            }
-            else
-            {
-                connectionString = args[1];
             }
 
             int failedFiles = 0;

@@ -2,7 +2,7 @@
   "profiles": {
     "DBFImport": {
       "commandName": "Project",
-      "commandLineArgs": "\"C:\\Data\\ETL\\BVBADATAPLAN\\*.DBF\" \".\\DEVSQLSERVER\" \"DBFactImport\""
+      "commandLineArgs": "--path \"C:\\Data\\My DBF files\\*.DBF\" --server \"DEVSERVER\\SQL2017\" --database \"ImportedDbfFiles\""
     }
   }
 }
