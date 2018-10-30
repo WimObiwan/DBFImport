@@ -256,48 +256,58 @@ namespace DBFImport
                 bcp.DestinationTableName = $"[{table}]";
                 bcp.BulkCopyTimeout = 1800;
 
-                DataTable dataTable = new DataTable();
+                //DataTable dataTable = new DataTable();
 
-                foreach (var fieldDescriptor in fieldDescriptors)
+                //foreach (var fieldDescriptor in fieldDescriptors)
+                //{
+                //    dataTable.Columns.Add(fieldDescriptor.Name, fieldDescriptor.GetDataType());
+                //}
+
+                //int insertCount = 0, deletedCount = 0;
+                //foreach (var record in records)
+                //{
+                //    if (record.Deleted)
+                //    {
+                //        deletedCount++;
+                //        continue;
+                //    }
+
+                //    var row = dataTable.NewRow();
+
+                //    for (int col = 0; col < fieldDescriptors.Count; col++)
+                //    {
+                //        row[col] = record.Fields[col] ?? DBNull.Value; ;
+                //    }
+
+                //    dataTable.Rows.Add(row);
+                //    insertCount++;
+
+                //    if (insertCount % 1000 == 0)
+                //    {
+                //        Console.Write('.');
+                //    }
+                //}
+                //Console.WriteLine();
+
+                //bcp.WriteToServer(dataReader);
+
+                //return (dataReader.Inserted, dataReader.Deleted);
+
+                DataReader dataReader = new DataReader(fieldDescriptors, records);
+
+                try
                 {
-                    dataTable.Columns.Add(fieldDescriptor.Name, fieldDescriptor.GetDataType());
+                    bcp.BatchSize = 1000;
+                    bcp.NotifyAfter = 1000;
+                    bcp.SqlRowsCopied += delegate (object sender, SqlRowsCopiedEventArgs args) { Console.Write('.'); };
+                    bcp.WriteToServer(dataReader);
+                }
+                finally 
+                {
+                    Console.WriteLine();
                 }
 
-                int insertCount = 0, deletedCount = 0;
-                foreach (var record in records)
-                {
-                    if (record.Deleted)
-                    {
-                        deletedCount++;
-                        continue;
-                    }
-
-                    var row = dataTable.NewRow();
-
-                    for (int col = 0; col < fieldDescriptors.Count; col++)
-                    {
-                        row[col] = record.Fields[col] ?? DBNull.Value; ;
-                    }
-
-                    dataTable.Rows.Add(row);
-                    insertCount++;
-
-                    if (insertCount % 1000 == 0)
-                    {
-                        Console.Write('.');
-                    }
-                }
-                Console.WriteLine();
-
-                bcp.WriteToServer(dataTable);
-
-                return (insertCount, deletedCount);
-
-                //BcpRecordAdaptor dataTable = new BcpRecordAdaptor(fieldDescriptors, records);
-
-                //bcp.WriteToServer(dataTable);
-
-                //return (dataTable.InsertCount, dataTable.DeletedCount);
+                return (dataReader.Inserted, dataReader.Deleted);
             }
         }
 
