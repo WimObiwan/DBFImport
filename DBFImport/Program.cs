@@ -99,12 +99,19 @@ namespace DBFImport
             int succeededFiles = 0;
             Stopwatch sw = Stopwatch.StartNew();
 
+            int totalInsertCount = 0;
             if (File.Exists(path))
             {
-                if (ProcessFile(path, connectionString, codepage, noBulkCopy))
+                int insertCount = ProcessFile(path, connectionString, codepage, noBulkCopy);
+                if (insertCount >= 0)
+                {
+                    totalInsertCount += insertCount;
                     succeededFiles++;
+                }
                 else
+                {
                     failedFiles++;
+                }
             }
             else
             {
@@ -121,25 +128,34 @@ namespace DBFImport
 
                 foreach (var file in Directory.EnumerateFiles(path, mask))
                 {
-                    if (ProcessFile(file, connectionString, codepage, noBulkCopy))
+                    int insertCount = ProcessFile(file, connectionString, codepage, noBulkCopy);
+                    if (insertCount >= 0)
+                    {
+                        totalInsertCount += insertCount;
                         succeededFiles++;
+                    }
                     else
+                    {
                         failedFiles++;
+                    }
                 }
             }
 
-            Console.WriteLine($"Succeeded files: {succeededFiles}");
-            Console.WriteLine($"Failed files:    {failedFiles}");
-            Console.WriteLine($"Total Duration:  {sw.Elapsed}");
+            Console.WriteLine();
+            Console.WriteLine("Import finished.");
+            Console.WriteLine("Statistics:");
+            Console.WriteLine($"  Records:          {totalInsertCount}");
+            Console.WriteLine($"  Succeeded files:  {succeededFiles}");
+            Console.WriteLine($"  Failed files:     {failedFiles}");
+            Console.WriteLine($"  Total Duration:   {sw.Elapsed}");
 
             return failedFiles;
         }
 
-        static bool ProcessFile(string filename, string connectionString, int codepage, bool noBulkCopy)
+        static int ProcessFile(string filename, string connectionString, int codepage, bool noBulkCopy)
         {
             Console.WriteLine($"Processing {filename}...");
             Stopwatch sw = Stopwatch.StartNew();
-            bool result;
             try
             {
                 using (DbfFileStream dbfFileStream = new DbfFileStream(filename, codepage))
@@ -149,14 +165,16 @@ namespace DBFImport
                     Console.WriteLine($"  LastUpdate:       {dbfFileStream.Header.LastUpdate.ToShortDateString()}");
                     Console.WriteLine($"  Fields:           {dbfFileStream.Header.FieldCount}");
                     Console.WriteLine($"  Records:          {dbfFileStream.Header.RecordCount}");
+                    Console.Write("  Importing:        ");
 
                     (int insertCount, int deletedCount) = 
                         CreateTable(connectionString, table, dbfFileStream.FieldDescriptors, dbfFileStream.Records, noBulkCopy);
                     Console.WriteLine($"  Inserted:         {insertCount}");
                     Console.WriteLine($"  MarkedAsDeleted:  {deletedCount}");
-                }
+                    Console.WriteLine($"  Duration:         {sw.Elapsed}");
 
-                result = true;
+                    return insertCount;
+                }
             }
             catch (Exception e)
             {
@@ -172,12 +190,8 @@ namespace DBFImport
                 throw;
 #endif
 
-                result = false;
+                return -1;
             }
-
-            Console.WriteLine($"  Duration:   {sw.Elapsed}");
-
-            return result;
         }
 
         private static (int insertedCount, int deletedCount) CreateTable(string connectionString, string table, 
