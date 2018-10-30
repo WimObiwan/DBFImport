@@ -31,6 +31,9 @@ namespace DBFImport
             [Option('c', "connectionstring", SetName = "connstring", Required = true, HelpText = "Database connection string")]
             public string ConnectionString { get; set; }
 
+            [Option("codepage", Required = false, HelpText = "Code page for decoding text")]
+            public int CodePage { get; set; }
+
             [Usage]
             public static IEnumerable<Example> Examples
             {
@@ -43,6 +46,14 @@ namespace DBFImport
                                 DbfPath = @"c:\Data\My DBF files\*.DBF",
                                 Server = @"DEVSERVER\SQL2017",
                                 Database = "ImportedDbfFiles",
+                            }),
+                        new Example("Imports DBF files, and decode text using code page 1252",
+                            new Options
+                            {
+                                DbfPath = @"c:\Data\My DBF files\*.DBF",
+                                Server = @"DEVSERVER\SQL2017",
+                                Database = "ImportedDbfFiles",
+                                CodePage = 1252
                             }),
                         new Example("Imports DBF files, and connect to SQL Server using connection string",
                             new Options
@@ -78,13 +89,15 @@ namespace DBFImport
                 connectionString = connectionStringBuilder.ConnectionString;
             }
 
+            int codepage = options.CodePage;
+
             int failedFiles = 0;
             int succeededFiles = 0;
             Stopwatch sw = Stopwatch.StartNew();
 
             if (File.Exists(path))
             {
-                if (ProcessFile(path, connectionString))
+                if (ProcessFile(path, connectionString, codepage))
                     succeededFiles++;
                 else
                     failedFiles++;
@@ -104,7 +117,7 @@ namespace DBFImport
 
                 foreach (var file in Directory.EnumerateFiles(path, mask))
                 {
-                    if (ProcessFile(file, connectionString))
+                    if (ProcessFile(file, connectionString, codepage))
                         succeededFiles++;
                     else
                         failedFiles++;
@@ -118,14 +131,14 @@ namespace DBFImport
             return failedFiles;
         }
 
-        static bool ProcessFile(string filename, string connectionString)
+        static bool ProcessFile(string filename, string connectionString, int codepage)
         {
             Console.WriteLine($"Processing {filename}...");
             Stopwatch sw = Stopwatch.StartNew();
             bool result;
             try
             {
-                using (DbfFileStream dbfFileStream = new DbfFileStream(filename))
+                using (DbfFileStream dbfFileStream = new DbfFileStream(filename, codepage))
                 {
                     string table = Path.GetFileNameWithoutExtension(filename);
 

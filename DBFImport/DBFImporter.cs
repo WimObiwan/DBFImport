@@ -155,11 +155,17 @@ namespace DBFImport
             }
         }
 
-        public DbfFileStream(string filename)
+        public DbfFileStream(string filename, int codepage)
         {
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-            //textEncoding = Encoding.GetEncoding(850);
-            textEncoding = Encoding.GetEncoding(1252);
+            if (codepage != 0)
+            {
+                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                textEncoding = Encoding.GetEncoding(codepage);
+            }
+            else
+            {
+                textEncoding = Encoding.ASCII;
+            }
 
             fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read);
             binaryReader = new BinaryReader(fileStream);
