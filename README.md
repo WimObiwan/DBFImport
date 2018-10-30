@@ -44,6 +44,16 @@ The database must be an existing database.  Every DBF file is imported into a da
  * https://github.com/WimObiwan/DBFImport/releases/latest
  * Download & unzip the asset: DBFImport.zip
 
+# Typical speed characteristics
+
+For what it's worth, this is a real situation:
+
+ * High-end laptop with SSD disk
+ * Import of 714 DBF files, containing 4868381 records (excluding those marked for deletion)
+ * Import into a local SQL Server 2017 Developer Edition.
+ * Using BulkCopy, it takes 2:16.825 (136 seconds)
+ * Using SQL Command (`--nobulkcopy`), it takes 16:49.497
+
 # Known issues & To do's
 
 Any feedback ([issues](https://github.com/WimObiwan/DBFImport/issues) or [pull requests](https://github.com/WimObiwan/DBFImport/pulls)) is welcome!
