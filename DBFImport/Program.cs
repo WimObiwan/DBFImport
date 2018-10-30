@@ -297,7 +297,7 @@ namespace DBFImport
 
                 try
                 {
-                    bcp.BatchSize = 1000;
+                    bcp.BatchSize = 10000;
                     bcp.NotifyAfter = 1000;
                     bcp.SqlRowsCopied += delegate (object sender, SqlRowsCopiedEventArgs args) { Console.Write('.'); };
                     bcp.WriteToServer(dataReader);
