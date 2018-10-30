@@ -34,6 +34,9 @@ namespace DBFImport
             [Option("codepage", Required = false, HelpText = "Code page for decoding text")]
             public int CodePage { get; set; }
 
+            [Option("nobulkcopy", Required = false, HelpText = "Use much slower 'SQL Command' interface, instead of 'SQL BulkCopy'")]
+            public bool NoBulkCopy { get; set; }
+
             [Usage]
             public static IEnumerable<Example> Examples
             {
@@ -90,6 +93,7 @@ namespace DBFImport
             }
 
             int codepage = options.CodePage;
+            bool noBulkCopy = options.NoBulkCopy;
 
             int failedFiles = 0;
             int succeededFiles = 0;
@@ -97,7 +101,7 @@ namespace DBFImport
 
             if (File.Exists(path))
             {
-                if (ProcessFile(path, connectionString, codepage))
+                if (ProcessFile(path, connectionString, codepage, noBulkCopy))
                     succeededFiles++;
                 else
                     failedFiles++;
@@ -117,7 +121,7 @@ namespace DBFImport
 
                 foreach (var file in Directory.EnumerateFiles(path, mask))
                 {
-                    if (ProcessFile(file, connectionString, codepage))
+                    if (ProcessFile(file, connectionString, codepage, noBulkCopy))
                         succeededFiles++;
                     else
                         failedFiles++;
@@ -131,7 +135,7 @@ namespace DBFImport
             return failedFiles;
         }
 
-        static bool ProcessFile(string filename, string connectionString, int codepage)
+        static bool ProcessFile(string filename, string connectionString, int codepage, bool noBulkCopy)
         {
             Console.WriteLine($"Processing {filename}...");
             Stopwatch sw = Stopwatch.StartNew();
@@ -146,7 +150,8 @@ namespace DBFImport
                     Console.WriteLine($"  Fields:           {dbfFileStream.Header.FieldCount}");
                     Console.WriteLine($"  Records:          {dbfFileStream.Header.RecordCount}");
 
-                    (int insertCount, int deletedCount) = CreateTable(connectionString, table, dbfFileStream.FieldDescriptors, dbfFileStream.Records);
+                    (int insertCount, int deletedCount) = 
+                        CreateTable(connectionString, table, dbfFileStream.FieldDescriptors, dbfFileStream.Records, noBulkCopy);
                     Console.WriteLine($"  Inserted:         {insertCount}");
                     Console.WriteLine($"  MarkedAsDeleted:  {deletedCount}");
                 }
@@ -176,8 +181,8 @@ namespace DBFImport
         }
 
         private static (int insertedCount, int deletedCount) CreateTable(string connectionString, string table, 
-            IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
-            IEnumerable<DbfRecord> records)
+            IReadOnlyList<DbfFieldDescriptor> fieldDescriptors, IEnumerable<DbfRecord> records,
+            bool noBulkCopy)
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
@@ -230,8 +235,10 @@ namespace DBFImport
 
                 try
                 {
-                    //return FillTableUsingSqlCommand(conn, table, fieldDescriptors, records);
-                    return FillTableUsingBulkCopy(conn, table, fieldDescriptors, records);
+                    if (noBulkCopy)
+                        return FillTableUsingSqlCommand(conn, table, fieldDescriptors, records);
+                    else
+                        return FillTableUsingBulkCopy(conn, table, fieldDescriptors, records);
                 }
                 catch (Exception e)
                 {
