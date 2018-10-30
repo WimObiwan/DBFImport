@@ -200,7 +200,7 @@ namespace DBFImport
                 }
                 catch (Exception e)
                 {
-                    throw new Exception($"Failed to drop existing table ${table}", e);
+                    throw new Exception($"Failed to drop existing table {table}", e);
                 }
 
                 try
@@ -225,7 +225,7 @@ namespace DBFImport
                 }
                 catch (Exception e)
                 {
-                    throw new Exception($"Failed to create table ${table}", e);
+                    throw new Exception($"Failed to create table {table}", e);
                 }
 
                 try
@@ -235,7 +235,7 @@ namespace DBFImport
                 }
                 catch (Exception e)
                 {
-                    throw new Exception($"Failed to fill table ${table}", e);
+                    throw new Exception($"Failed to fill table {table}", e);
                 }
             }
         }
