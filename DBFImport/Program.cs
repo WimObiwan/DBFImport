@@ -274,7 +274,13 @@ namespace DBFImport
 
                     dataTable.Rows.Add(row);
                     insertCount++;
+
+                    if (insertCount % 1000 == 0)
+                    {
+                        Console.Write('.');
+                    }
                 }
+                Console.WriteLine();
 
                 bcp.WriteToServer(dataTable);
 
@@ -354,7 +360,14 @@ namespace DBFImport
                                 $"Failed to insert record #{record.RecordNo + 1} into database, {insertCount} already inserted",
                                 e);
                         }
+
+                        if (insertCount % 1000 == 0)
+                        {
+                            Console.Write('.');
+                        }
                     }
+
+                    Console.WriteLine();
                     transaction.Commit();
                 }
 
