@@ -246,7 +246,7 @@ namespace DBFImport
         {
             using (SqlBulkCopy bcp =  new SqlBulkCopy(conn))
             {
-                bcp.DestinationTableName = table;
+                bcp.DestinationTableName = $"[{table}]";
                 bcp.BulkCopyTimeout = 1800;
 
                 DataTable dataTable = new DataTable();
