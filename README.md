@@ -83,7 +83,7 @@ For what it's worth, this is a real situation:
  * Import of 714 DBF files, containing 4868381 records (excluding those marked for deletion)
  * Import into a local SQL Server 2017 Developer Edition.
  * Using BulkCopy, it takes 2:16.825 (136 seconds)
- * Using SQL Command (`--nobulkcopy`), it takes 16:49.497
+ * Using SQL Command (`--nobulkcopy`), it takes 16:49.497 (1009 seconds)
 
 # Impact of the option `--nobulkcopy`
 
