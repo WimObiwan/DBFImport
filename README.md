@@ -70,9 +70,10 @@ The database must be an existing database.  Every DBF file is imported into a da
 
 # Download & installation
  
- * Requires dotnet Core 2.1 (available on Windows, Linux, Mac)
- * https://github.com/WimObiwan/DBFImport/releases/latest
- * Download & unzip the asset: DBFImport.zip
+ * Requires dotnet Core 2.1 (available on Windows, Linux, Mac).  
+   * Go to https://getdotnet.org, click "Download", click "Download .net Core Runtime".
+   * Or install using Chocolatey: `choco install dotnetcore-runtime`
+ * Download & unzip the zip-file DBFImport.zip from https://github.com/WimObiwan/DBFImport/releases/latest
 
 # Typical speed characteristics
 
