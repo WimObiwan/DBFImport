@@ -91,7 +91,7 @@ For what it's worth, this is a real situation:
 | ---------------------------- | ------------------------------------ | -------------------------- |
 | SQL Command (`--nobulkcopy`) | 16:11.421 (971 s)<br>4823 records/s<br>2.36 MiB/s | (\*) 50.5 hours<br>27 records/s<br>13.39 KiB/s |
 | SQL BulkCopy                 | 2:05.705 (126 s)<br>38729 records/s<br>18.91 MiB/s  | 9:48.394 (588 s)<br>8274 records/s<br>4.04 MiB/s |
-| Speedup of BulkCopy          | x7.73                                | 308.98x                            |
+| Speedup of BulkCopy          | 7.73x                                | 308.98x                            |
 
 (\*) This test took ages, these numbers were obtained by extrapolation.
 
