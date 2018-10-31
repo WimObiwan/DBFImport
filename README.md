@@ -79,19 +79,26 @@ The database must be an existing database.  Every DBF file is imported into a da
 
 For what it's worth, this is a real situation:
 
- * DBFImport.dll running on high-end laptop with SSD disk, Intel i7
- * Import of 714 local DBF files, total size 2493655304 bytes (2.32 GiB)
- * Containing 4869097 records (excluding those marked for deletion)
+ * DBFImport.dll running on high-end laptop with SSD disk, Intel i7, 16 GB RAM.
+ * DBFImport.dll compiled in Release mode, running on Windows 10 (1804), using dotnet Core 2.1.205 SDK.
+ * Import of 714 local DBF files, total size 2493014358 bytes (2.32 GiB)
+ * Containing 4868381 records (excluding those marked for deletion)
  * {1} Import into a local SQL Server 2017 Developer Edition.
- * {2} Import into a remote SQL Server 2016 Standard Edition (server specs unknown, virtualized)
- * Using BulkCopy, it takes 2:16.825 (136 seconds)
- * Using SQL Command (`--nobulkcopy`), it takes 16:49.497 (1009 seconds)
+ * {2} Import into a remote SQL Server 2016 Standard Edition (server specs unknown, virtualized, hosted in a datacenter)
+ * In every test, the existing (filled) tabled was dropped and recreated.
 
-|                              | {1} Local SQL Server 2017  | {2} Remote SQL Server 2016 |
-| ---------------------------- | -------------------------- | -------------------------- |
-| SQL Command (`--nobulkcopy`) | 16:49.497<br>1009s<br>4823 records/s |                            |
-| SQL BulkCopy                 | 2:16.825<br>136s<br>35586 records/s |   3:43.5674086 (223 secs)  |
-| Speedup of BulkCopy          | x7.38                      |                            |
+|                              | {1} Local SQL Server 2017            | {2} Remote SQL Server 2016 |
+| ---------------------------- | ------------------------------------ | -------------------------- |
+| SQL Command (`--nobulkcopy`) | 16:11.421 (971 s)<br>4823 records/s<br>2.36 MiB/s | (\*) 50.5 hours<br>27 records/s<br>13.39 KiB/s |
+| SQL BulkCopy                 | 2:05.705 (126 s)<br>38729 records/s<br>18.91 MiB/s  | 9:48.394 (588 s)<br>8274 records/s<br>4.04 MiB/s |
+| Speedup of BulkCopy          | x7.73                                | 308.98x                            |
+
+Resource utilization of dotnet.exe:
+|                              | {1} Local SQL Server 2017                     || 
+|                              | CPU                                  | Memory  | CPU      | Memory  |
+| ---------------------------- | ------------------------------------ | ------- |
+| SQL Command (`--nobulkcopy`) | 4-8%<br>(during 16 minutes)          | 12.2 MB | 0%                          | 10.9 MB |
+| SQL BulkCopy                 | 12% constantly<br>(during 2 minutes) | 12.1 MB | 1-4%<br>(during 10 minutes) | 11.7 MB |
 
 # Impact of the option `--nobulkcopy`
 
