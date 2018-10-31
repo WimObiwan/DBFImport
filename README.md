@@ -97,11 +97,10 @@ For what it's worth, this is a real situation:
 
 Resource utilization of dotnet.exe:
 
-|                              | {1} Local SQL Server 2017            |         | {2} Remote SQL Server 2016  |          |
-|                              | CPU                                  | Memory  | CPU                         | Memory  |
-| ---------------------------- | ------------------------------------ | ------- | --------------------------- | ------- |
-| SQL Command (`--nobulkcopy`) | 4-8%<br>(during 16 minutes)          | 12.2 MB | 0%                          | 10.9 MB |
-| SQL BulkCopy                 | 12% constantly<br>(during 2 minutes) | 12.1 MB | 1-4%<br>(during 10 minutes) | 11.7 MB |
+|                              | {1} Local SQL Server 2017                        | {2} Remote SQL Server 2016 |
+| ---------------------------- | ------------------------------------------------ | -------------------------- |
+| SQL Command (`--nobulkcopy`) | CPU: 4-8% (during 16 minutes)<br>Memory: 12.2 MB | CPU: 0%<br>Memory: 10.9 MB |
+| SQL BulkCopy                 | CPU: 12% constantly (during 2 minutes)<br>Memory: 12.1 MB | CPU: 1-4% (during 10 minutes)<br>Memory: 11.7 MB |
 
 # Impact of the option `--nobulkcopy`
 
