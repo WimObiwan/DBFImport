@@ -94,7 +94,8 @@ For what it's worth, this is a real situation:
 | Speedup of BulkCopy          | x7.73                                | 308.98x                            |
 
 Resource utilization of dotnet.exe:
-|                              | {1} Local SQL Server 2017                     || 
+
+|                              | {1} Local SQL Server 2017                     || {2} Remote SQL Server 2016 ||
 |                              | CPU                                  | Memory  | CPU      | Memory  |
 | ---------------------------- | ------------------------------------ | ------- |
 | SQL Command (`--nobulkcopy`) | 4-8%<br>(during 16 minutes)          | 12.2 MB | 0%                          | 10.9 MB |
