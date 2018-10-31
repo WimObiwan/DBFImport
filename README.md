@@ -79,11 +79,19 @@ The database must be an existing database.  Every DBF file is imported into a da
 
 For what it's worth, this is a real situation:
 
- * High-end laptop with SSD disk
- * Import of 714 DBF files, containing 4868381 records (excluding those marked for deletion)
- * Import into a local SQL Server 2017 Developer Edition.
+ * DBFImport.dll running on high-end laptop with SSD disk, Intel i7
+ * Import of 714 local DBF files, total size 2493655304 bytes (2.32 GiB)
+ * Containing 4869097 records (excluding those marked for deletion)
+ * {1} Import into a local SQL Server 2017 Developer Edition.
+ * {2} Import into a remote SQL Server 2016 Standard Edition (server specs unknown, virtualized)
  * Using BulkCopy, it takes 2:16.825 (136 seconds)
  * Using SQL Command (`--nobulkcopy`), it takes 16:49.497 (1009 seconds)
+
+|                              | {1} Local SQL Server 2017  | {2} Remote SQL Server 2016 |
+| ---------------------------- | -------------------------- | -------------------------- |
+| SQL Command (`--nobulkcopy`) | 16:49.497<br>1009s<br>4823 records/s |                            |
+| SQL BulkCopy                 | 2:16.825<br>136s<br>35586 records/s |   3:43.5674086 (223 secs)  |
+| Speedup of BulkCopy          | x7.38                      |                            |
 
 # Impact of the option `--nobulkcopy`
 
