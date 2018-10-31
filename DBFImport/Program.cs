@@ -78,9 +78,20 @@ namespace DBFImport
                     errs => 1);
         }
 
+        private static void LogException(string message, Exception e)
+        {
+            Console.WriteLine(message);
+            Console.WriteLine($"   Exception: {e.Message}");
+            while (e.InnerException != null)
+            {
+                e = e.InnerException;
+                Console.WriteLine($"       Inner: {e.Message}");
+            }
+        }
+
         private static int RunWithOptions(Options options)
         {
-            string path = options.DbfPath;
+            string dbfPath = options.DbfPath;
 
             string connectionString = options.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -99,36 +110,12 @@ namespace DBFImport
             int succeededFiles = 0;
             Stopwatch sw = Stopwatch.StartNew();
 
-            int totalInsertCount = 0;
-            if (File.Exists(path))
+            try
             {
-                int insertCount = ProcessFile(path, connectionString, codepage, noBulkCopy);
-                if (insertCount >= 0)
+                int totalInsertCount = 0;
+                if (File.Exists(dbfPath))
                 {
-                    totalInsertCount += insertCount;
-                    succeededFiles++;
-                }
-                else
-                {
-                    failedFiles++;
-                }
-            }
-            else
-            {
-                string mask;
-                if (Directory.Exists(path))
-                {
-                    mask = "*.DBF";
-                }
-                else
-                {
-                    mask = Path.GetFileName(path);
-                    path = Path.GetDirectoryName(path);
-                }
-
-                foreach (var file in Directory.EnumerateFiles(path, mask))
-                {
-                    int insertCount = ProcessFile(file, connectionString, codepage, noBulkCopy);
+                    int insertCount = ProcessFile(dbfPath, connectionString, codepage, noBulkCopy);
                     if (insertCount >= 0)
                     {
                         totalInsertCount += insertCount;
@@ -139,15 +126,56 @@ namespace DBFImport
                         failedFiles++;
                     }
                 }
-            }
+                else
+                {
+                    string path;
+                    string mask;
+                    if (Directory.Exists(dbfPath))
+                    {
+                        path = dbfPath;
+                        mask = "*.DBF";
+                    }
+                    else
+                    {
+                        mask = Path.GetFileName(dbfPath);
+                        path = Path.GetDirectoryName(dbfPath);
+                        if (string.IsNullOrEmpty(path))
+                            path = ".";
+                    }
 
-            Console.WriteLine();
-            Console.WriteLine("Import finished.");
-            Console.WriteLine("Statistics:");
-            Console.WriteLine($"  Records:          {totalInsertCount}");
-            Console.WriteLine($"  Succeeded files:  {succeededFiles}");
-            Console.WriteLine($"  Failed files:     {failedFiles}");
-            Console.WriteLine($"  Total Duration:   {sw.Elapsed}");
+                    foreach (var file in Directory.EnumerateFiles(path, mask))
+                    {
+                        int insertCount = ProcessFile(file, connectionString, codepage, noBulkCopy);
+                        if (insertCount >= 0)
+                        {
+                            totalInsertCount += insertCount;
+                            succeededFiles++;
+                        }
+                        else
+                        {
+                            failedFiles++;
+                        }
+                    }
+                }
+
+                Console.WriteLine();
+                Console.WriteLine("Import finished.");
+                Console.WriteLine("Statistics:");
+                Console.WriteLine($"  Records:          {totalInsertCount}");
+                Console.WriteLine($"  Succeeded files:  {succeededFiles}");
+                Console.WriteLine($"  Failed files:     {failedFiles}");
+                Console.WriteLine($"  Total Duration:   {sw.Elapsed}");
+            }
+            catch (Exception e)
+            {
+                LogException($"Failed to process files {dbfPath}", e);
+
+#if DEBUG
+                throw;
+#else
+                return -1;
+#endif
+            }
 
             return failedFiles;
         }
@@ -178,19 +206,13 @@ namespace DBFImport
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Failed to process file {filename}");
-                Console.WriteLine($"   Exception: {e.Message}");
-                while (e.InnerException != null)
-                {
-                    e = e.InnerException;
-                    Console.WriteLine($"       Inner: {e.Message}");
-                }
+                LogException($"Failed to process file {filename}", e);
 
 #if DEBUG
                 throw;
-#endif
-
+#else
                 return -1;
+#endif
             }
         }
 
