@@ -91,6 +91,9 @@ namespace DBFImport
 
         private static int RunWithOptions(Options options)
         {
+            Console.WriteLine(CommandLine.Text.HeadingInfo.Default.ToString());
+            Console.WriteLine(CommandLine.Text.CopyrightInfo.Default.ToString());
+
             string dbfPath = options.DbfPath;
 
             string connectionString = options.ConnectionString;
