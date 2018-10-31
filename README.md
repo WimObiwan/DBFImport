@@ -93,11 +93,13 @@ For what it's worth, this is a real situation:
 | SQL BulkCopy                 | 2:05.705 (126 s)<br>38729 records/s<br>18.91 MiB/s  | 9:48.394 (588 s)<br>8274 records/s<br>4.04 MiB/s |
 | Speedup of BulkCopy          | x7.73                                | 308.98x                            |
 
+(\*) This test took ages, these numbers were obtained by extrapolation.
+
 Resource utilization of dotnet.exe:
 
-|                              | {1} Local SQL Server 2017                     || {2} Remote SQL Server 2016 ||
-|                              | CPU                                  | Memory  | CPU      | Memory  |
-| ---------------------------- | ------------------------------------ | ------- |
+|                              | {1} Local SQL Server 2017            |         | {2} Remote SQL Server 2016  |          |
+|                              | CPU                                  | Memory  | CPU                         | Memory  |
+| ---------------------------- | ------------------------------------ | ------- | --------------------------- | ------- |
 | SQL Command (`--nobulkcopy`) | 4-8%<br>(during 16 minutes)          | 12.2 MB | 0%                          | 10.9 MB |
 | SQL BulkCopy                 | 12% constantly<br>(during 2 minutes) | 12.1 MB | 1-4%<br>(during 10 minutes) | 11.7 MB |
 
