@@ -158,6 +158,11 @@ namespace DBFImport
                     }
                 }
 
+                if (succeededFiles == 0)
+                {
+                    throw new Exception("No files were successfully imported");
+                }
+
                 Console.WriteLine();
                 Console.WriteLine("Import finished.");
                 Console.WriteLine("Statistics:");
