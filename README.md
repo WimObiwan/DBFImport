@@ -23,7 +23,7 @@ Built on DotNet Core 2.1, works on Windows, Linux, Mac.
        --help                    Display this help screen.
        --version                 Display version information.
 
-The database must be an existing database.  Every DBF file is imported into a database table with the same name (if the table exists, it is dropped first).
+The database must be an existing database.  Every DBF file is imported into a database table with the same name (if the table exists, it is dropped first).  A dot ('.') is displayed per 1000 records that are INSERTed in the database.
 
 # Examples
 
@@ -37,6 +37,36 @@ The database must be an existing database.  Every DBF file is imported into a da
     #Imports DBF files, and connect to SQL Server using connection string:
     dotnet DBFImport.dll --path "c:\Data\My DBF files\*.DBF" `
        --connectionstring "Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword"
+
+# Typical output
+
+    PS C:\> dotnet .\DBFImport.dll `
+    >>     --path 'c:\Data\My DBF files\*.DBF' --codepage 1252 `
+    >>     --server 'DEVSERVER\SQL2017' --database 'ImportedDbfFiles'
+    Processing c:\Data\My DBF files\ABALANS.DBF...
+      LastUpdate:       16/08/2018
+      Fields:           14
+      Records:          5
+      Importing:
+      Inserted:         1
+      MarkedAsDeleted:  4
+      Duration:         00:00:00.9591436
+    Processing c:\Data\My DBF files\ANALYT.dbf...
+      LastUpdate:       26/10/2018
+      Fields:           22
+      Records:          33496
+      Importing:        ................................
+      Inserted:         32402
+      MarkedAsDeleted:  1094
+      Duration:         00:00:00.4355719
+    ...
+
+    Import finished.
+    Statistics:
+      Records:          4869097
+      Succeeded files:  714
+      Failed files:     0
+      Total Duration:   00:02:46.6250966
 
 # Download & installation
  
@@ -53,6 +83,11 @@ For what it's worth, this is a real situation:
  * Import into a local SQL Server 2017 Developer Edition.
  * Using BulkCopy, it takes 2:16.825 (136 seconds)
  * Using SQL Command (`--nobulkcopy`), it takes 16:49.497
+
+# Impact of the option `--nobulkcopy`
+
+* When using BulkCopy, alle INSERTs are done in Batches of 10000 records.  When an error happens, the current batch is rolled back, and the BuldCopy is aborted.  All records INSERTed during previous batches will be present in the table.
+* When not using BulkCopy, every INSERT is done (separately using a prepared SQL Command), inside a single transaction.  This means that when an error occurs, the complete transaction is rolled back, and no records will be present in the database.
 
 # Known issues & To do's
 
