@@ -9,7 +9,7 @@ namespace DBFImport
 {
     static class FileStreamFactory
     {
-        static IFileStream Create(string filename, int codepage)
+        public static IFileStream Create(string filename, int codepage)
         {
             string ext = Path.GetExtension(filename);
             if (ext.Equals(".dbf", StringComparison.InvariantCultureIgnoreCase)) {

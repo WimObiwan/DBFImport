@@ -194,7 +194,7 @@ namespace DBFImport
             Stopwatch sw = Stopwatch.StartNew();
             try
             {
-                using (IFileStream dbfFileStream = new DbfFileStream(filename, codepage))
+                using (IFileStream dbfFileStream = FileStreamFactory.Create(filename, codepage))
                 {
                     string table = Path.GetFileNameWithoutExtension(filename);
 
