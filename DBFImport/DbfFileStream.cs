@@ -9,148 +9,23 @@ using System.Text;
 
 namespace DBFImport
 {
-    class DbfHeader
-    {
-        public byte Version { get; set; }
-        public DateTime LastUpdate { get; set; }
-        public int RecordCount { get; set; }
-        public short HeaderLength { get; set; }
-        public short RecordLength { get; set; }
-
-        public int FieldCount => (HeaderLength / 32 - 1);
-    }
-
-    class DbfFieldDescriptor
-    {
-        public int No { get; set; }
-        public string Name { get; set; }
-        public char TypeChar { get; set; }
-        public int Length { get; set; }
-        public byte DecimalCount { get; set; }
-
-        public Type GetDataType()
-        {
-            switch (TypeChar)
-            {
-                case 'C':
-                    return typeof(string);
-                case 'I':
-                    return typeof(int);
-                case 'N':
-                    return typeof(decimal);
-                case 'L':
-                    return typeof(bool);
-                case 'D':
-                    return typeof(DateTime);
-                case 'M':
-                    return typeof(string); //?
-                case 'T':
-                    return typeof(DateTime);
-                case 'W': //?
-                    return typeof(string); //?
-                case '0':
-                    return typeof(int);
-                case 'G':
-                    return typeof(string); //?
-                //case 'F':
-                //    return "FLOAT";
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-
-        public string GetSqlDataType()
-        {
-            switch (TypeChar)
-            {
-                case 'C':
-                    return $"VARCHAR({Length})";
-                case 'I':
-                    return "INT";
-                case 'N':
-                    return $"DECIMAL({Length + 1}, {DecimalCount})";
-                case 'L':
-                    return "BIT";
-                case 'D':
-                    return "DATETIME";
-                case 'M':
-                    return "VARCHAR(MAX)";
-                case 'T':
-                    return "DATETIME";
-                case 'W': //?
-                    return "VARCHAR(MAX)";
-                case '0':
-                    return "INT";
-                case 'G':
-                    return "VARCHAR(MAX)";
-                case 'F':
-                    return "FLOAT";
-                default:
-                    throw new NotSupportedException();
-            }
-
-        }
-
-        internal SqlParameter GetSqlParameter(string name)
-        {
-            switch (TypeChar)
-            {
-                case 'C':
-                    return new SqlParameter(name, SqlDbType.VarChar, Length);
-                case 'I':
-                    return new SqlParameter(name, SqlDbType.Int);
-                case 'N':
-                {
-                    var par = new SqlParameter(name, SqlDbType.Decimal);
-                    par.Precision = (byte)(Length + 3);
-                    par.Scale = DecimalCount;
-                    return par;
-                }
-                case 'L':
-                    return new SqlParameter(name, SqlDbType.Bit);
-                case 'D':
-                    return new SqlParameter(name, SqlDbType.DateTime);
-                case 'M':
-                    return new SqlParameter(name, SqlDbType.VarChar, -1);
-                case 'T':
-                    return new SqlParameter(name, SqlDbType.DateTime);
-                case 'W': //?
-                    return new SqlParameter(name, SqlDbType.VarChar, -1);
-                case '0':
-                    return new SqlParameter(name, SqlDbType.Int);
-                case 'G':
-                    return new SqlParameter(name, SqlDbType.VarChar, -1);
-                case 'F':
-                    return new SqlParameter(name, SqlDbType.Float);
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-    }
-
-    class DbfRecord
-    {
-        public int RecordNo { get; set; }
-        public bool Deleted { get; set; }
-        public object[] Fields { get; set; }
-    }
-
-    class DbfFileStream : IDisposable
+    class DbfFileStream : IFileStream
     {
         private FileStream fileStream;
         private BinaryReader binaryReader;
         private Encoding textEncoding;
 
-        public DbfHeader Header { get; }
+        public Header Header { get; }
 
-        public IReadOnlyList<DbfFieldDescriptor> FieldDescriptors { get; }
+        private IReadOnlyList<FieldDescriptor> fieldDescriptors;
+        public IReadOnlyList<IFieldDescriptor> FieldDescriptors => fieldDescriptors;
 
-        public IEnumerable<DbfRecord> Records
+        public IEnumerable<Record> Records
         {
             get
             {
                 for (int recordNo = 0; recordNo < Header.RecordCount; recordNo++) {
-                    yield return ReadRecord(recordNo, FieldDescriptors);
+                    yield return ReadRecord(recordNo, fieldDescriptors);
                 }
             }
         }
@@ -176,7 +51,7 @@ namespace DBFImport
                 throw new Exception("Failed to read header", e);
             }
 
-            var fieldDescriptors = new List<DbfFieldDescriptor>();
+            var fieldDescriptors = new List<FieldDescriptor>();
             try
             {
                 int no = 0;
@@ -197,7 +72,7 @@ namespace DBFImport
             int bytesRead = 32 + (32 * fieldDescriptors.Count) + 1;
             binaryReader.ReadBytes(Header.HeaderLength - bytesRead);
 
-            FieldDescriptors = fieldDescriptors;
+            this.fieldDescriptors = fieldDescriptors;
         }
 
         public void Dispose()
@@ -249,9 +124,9 @@ namespace DBFImport
             }
         }
 
-        DbfHeader ReadHeader(BinaryReader br)
+        Header ReadHeader(BinaryReader br)
         {
-            var header = new DbfHeader();
+            var header = new Header();
 
             // Version
             header.Version = br.ReadByte();
@@ -283,9 +158,9 @@ namespace DBFImport
             return header;
         }
 
-        DbfFieldDescriptor ReadFieldDescriptor(BinaryReader br, int fdNo)
+        FieldDescriptor ReadFieldDescriptor(BinaryReader br, int fdNo)
         {
-            var fieldDescriptor = new DbfFieldDescriptor();
+            var fieldDescriptor = new FieldDescriptor();
             fieldDescriptor.No = fdNo;
 
             try
@@ -320,11 +195,11 @@ namespace DBFImport
             }
         }
 
-        private DbfRecord ReadRecord(int recordNo, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors)
+        private Record ReadRecord(int recordNo, IReadOnlyList<FieldDescriptor> fieldDescriptors)
         {
             try
             {
-                var record = new DbfRecord();
+                var record = new Record();
 
                 record.RecordNo = recordNo;
 
@@ -356,7 +231,7 @@ namespace DBFImport
             }
         }
 
-        private object ReadField(DbfFieldDescriptor fd)
+        private object ReadField(FieldDescriptor fd)
         {
             var data = binaryReader.ReadBytes(fd.Length);
             switch (fd.TypeChar)
@@ -481,5 +356,81 @@ namespace DBFImport
             return textEncoding.GetString(data).TrimEnd();
         }
 
+        class FieldDescriptor : IFieldDescriptor
+        {
+            public int No { get; set; }
+            public string Name { get; set; }
+            public char TypeChar { get; set; }
+            public int Length { get; set; }
+            public byte DecimalCount { get; set; }
+
+            public string GetSqlDataType()
+            {
+                switch (TypeChar)
+                {
+                    case 'C':
+                        return $"VARCHAR({Length})";
+                    case 'I':
+                        return "INT";
+                    case 'N':
+                        return $"DECIMAL({Length + 1}, {DecimalCount})";
+                    case 'L':
+                        return "BIT";
+                    case 'D':
+                        return "DATETIME";
+                    case 'M':
+                        return "VARCHAR(MAX)";
+                    case 'T':
+                        return "DATETIME";
+                    case 'W': //?
+                        return "VARCHAR(MAX)";
+                    case '0':
+                        return "INT";
+                    case 'G':
+                        return "VARCHAR(MAX)";
+                    case 'F':
+                        return "FLOAT";
+                    default:
+                        throw new NotSupportedException($"Unsupported DBF type character '{TypeChar}'");
+                }
+
+            }
+
+            public SqlParameter GetSqlParameter(string name)
+            {
+                switch (TypeChar)
+                {
+                    case 'C':
+                        return new SqlParameter(name, SqlDbType.VarChar, Length);
+                    case 'I':
+                        return new SqlParameter(name, SqlDbType.Int);
+                    case 'N':
+                        {
+                            var par = new SqlParameter(name, SqlDbType.Decimal);
+                            par.Precision = (byte)(Length + 3);
+                            par.Scale = DecimalCount;
+                            return par;
+                        }
+                    case 'L':
+                        return new SqlParameter(name, SqlDbType.Bit);
+                    case 'D':
+                        return new SqlParameter(name, SqlDbType.DateTime);
+                    case 'M':
+                        return new SqlParameter(name, SqlDbType.VarChar, -1);
+                    case 'T':
+                        return new SqlParameter(name, SqlDbType.DateTime);
+                    case 'W': //?
+                        return new SqlParameter(name, SqlDbType.VarChar, -1);
+                    case '0':
+                        return new SqlParameter(name, SqlDbType.Int);
+                    case 'G':
+                        return new SqlParameter(name, SqlDbType.VarChar, -1);
+                    case 'F':
+                        return new SqlParameter(name, SqlDbType.Float);
+                    default:
+                        throw new NotSupportedException($"Unsupported DBF type character '{TypeChar}'");
+                }
+            }
+        }
     }
 }
