@@ -11,8 +11,6 @@ namespace DBFImport
         private IEnumerator<Record> records;
 
         public int Inserted { get; private set; }
-        public int Deleted { get; private set; }
-
         public DataReader(IReadOnlyList<IFieldDescriptor> fieldDescriptors, IEnumerable<Record> records)
         {
             this.fieldDescriptors = fieldDescriptors;
@@ -160,18 +158,11 @@ namespace DBFImport
             if (IsClosed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            while (records.MoveNext())
-            {
-                if (!records.Current.Deleted)
-                {
-                    Inserted++;
-                    return true;
-                }
+            bool moveNextResult = records.MoveNext();
+            if (moveNextResult)
+                Inserted++;
 
-                Deleted++;
-            }
-
-            return false;
+            return moveNextResult;
         }
 
         public int Depth { get; }

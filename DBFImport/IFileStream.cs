@@ -8,22 +8,18 @@ namespace DBFImport
 {
     interface IFileStream : IDisposable
     {
-        Header Header { get; }
+        IHeader Header { get; }
 
         IReadOnlyList<IFieldDescriptor> FieldDescriptors { get; }
 
         IEnumerable<Record> Records { get; }
     }
 
-    class Header
+    interface IHeader
     {
-        public byte Version { get; set; }
-        public DateTime LastUpdate { get; set; }
-        public int RecordCount { get; set; }
-        public short HeaderLength { get; set; }
-        public short RecordLength { get; set; }
-
-        public int FieldCount => (HeaderLength / 32 - 1);
+        DateTime LastUpdate { get; }
+        int? RecordCount { get; }
+        int FieldCount { get; }
     }
 
     interface IFieldDescriptor
@@ -37,7 +33,6 @@ namespace DBFImport
     class Record
     {
         public int RecordNo { get; set; }
-        public bool Deleted { get; set; }
         public object[] Fields { get; set; }
     }
 

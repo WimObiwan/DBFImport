@@ -15,17 +15,22 @@ namespace DBFImport
         private BinaryReader binaryReader;
         private Encoding textEncoding;
 
-        public Header Header { get; }
+        private DbfHeader header;
+        public IHeader Header => header;
 
-        private IReadOnlyList<FieldDescriptor> fieldDescriptors;
+        private IReadOnlyList<DbfFieldDescriptor> fieldDescriptors;
         public IReadOnlyList<IFieldDescriptor> FieldDescriptors => fieldDescriptors;
 
         public IEnumerable<Record> Records
         {
             get
             {
-                for (int recordNo = 0; recordNo < Header.RecordCount; recordNo++) {
-                    yield return ReadRecord(recordNo, fieldDescriptors);
+                int recordCount = Header.RecordCount.GetValueOrDefault(0);
+                for (int recordNo = 0; recordNo < recordCount; recordNo++)
+                {
+                    var record = ReadRecord(recordNo, fieldDescriptors);
+                    if (record != null)
+                        yield return record;
                 }
             }
         }
@@ -46,12 +51,12 @@ namespace DBFImport
             binaryReader = new BinaryReader(fileStream);
 
             try {
-                Header = ReadHeader(binaryReader);
+                header = ReadHeader(binaryReader);
             } catch (Exception e) {
                 throw new Exception("Failed to read header", e);
             }
 
-            var fieldDescriptors = new List<FieldDescriptor>();
+            var fieldDescriptors = new List<DbfFieldDescriptor>();
             try
             {
                 int no = 0;
@@ -70,7 +75,7 @@ namespace DBFImport
             // Read remainder of header
 
             int bytesRead = 32 + (32 * fieldDescriptors.Count) + 1;
-            binaryReader.ReadBytes(Header.HeaderLength - bytesRead);
+            binaryReader.ReadBytes(header.HeaderLength - bytesRead);
 
             this.fieldDescriptors = fieldDescriptors;
         }
@@ -124,9 +129,9 @@ namespace DBFImport
             }
         }
 
-        Header ReadHeader(BinaryReader br)
+        private DbfHeader ReadHeader(BinaryReader br)
         {
-            var header = new Header();
+            var header = new DbfHeader();
 
             // Version
             header.Version = br.ReadByte();
@@ -158,9 +163,9 @@ namespace DBFImport
             return header;
         }
 
-        FieldDescriptor ReadFieldDescriptor(BinaryReader br, int fdNo)
+        DbfFieldDescriptor ReadFieldDescriptor(BinaryReader br, int fdNo)
         {
-            var fieldDescriptor = new FieldDescriptor();
+            var fieldDescriptor = new DbfFieldDescriptor();
             fieldDescriptor.No = fdNo;
 
             try
@@ -195,35 +200,56 @@ namespace DBFImport
             }
         }
 
-        private Record ReadRecord(int recordNo, IReadOnlyList<FieldDescriptor> fieldDescriptors)
+        private Record ReadRecord(int recordNo, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors)
         {
             try
             {
-                var record = new Record();
-
-                record.RecordNo = recordNo;
-
                 byte status = binaryReader.ReadByte();
                 if (status != 0x20 && status != 0x2A)
                     throw new NotSupportedException($"Unknown record status ({status})");
-                record.Deleted = (status == 0x2A);
 
-                record.Fields = new object[fieldDescriptors.Count];
-
-                for (int fdNo = 0; fdNo < fieldDescriptors.Count; fdNo++)
+                if (status == 0x2A)
                 {
-                    var fd = fieldDescriptors[fdNo];
-                    try
+                    // Deleted record.  Read fields but don't store results.
+                    // Don't create Record object, which gives some performance boost on tables with many deleted records.
+                    for (int fdNo = 0; fdNo < fieldDescriptors.Count; fdNo++)
                     {
-                        record.Fields[fdNo] = ReadField(fd);
+                        var fd = fieldDescriptors[fdNo];
+                        try
+                        {
+                            ReadField(fd);
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception($"Failed to parse column #{fd.No} ({fd.Name})", e);
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        throw new Exception($"Failed to parse column #{fd.No} ({fd.Name})", e);
-                    }
-                }
 
-                return record;
+                    return null;
+                }
+                else
+                {
+                    var record = new Record();
+
+                    record.RecordNo = recordNo;
+
+                    record.Fields = new object[fieldDescriptors.Count];
+
+                    for (int fdNo = 0; fdNo < fieldDescriptors.Count; fdNo++)
+                    {
+                        var fd = fieldDescriptors[fdNo];
+                        try
+                        {
+                            record.Fields[fdNo] = ReadField(fd);
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception($"Failed to parse column #{fd.No} ({fd.Name})", e);
+                        }
+                    }
+
+                    return record;
+                }
             }
             catch (Exception e)
             {
@@ -231,7 +257,7 @@ namespace DBFImport
             }
         }
 
-        private object ReadField(FieldDescriptor fd)
+        private object ReadField(DbfFieldDescriptor fd)
         {
             var data = binaryReader.ReadBytes(fd.Length);
             switch (fd.TypeChar)
@@ -356,7 +382,18 @@ namespace DBFImport
             return textEncoding.GetString(data).TrimEnd();
         }
 
-        class FieldDescriptor : IFieldDescriptor
+        class DbfHeader : IHeader
+        {
+            public byte Version { get; set; }
+            public DateTime LastUpdate { get; set; }
+            public int? RecordCount { get; set; }
+            public short HeaderLength { get; set; }
+            public short RecordLength { get; set; }
+
+            public int FieldCount => (HeaderLength / 32 - 1);
+        }
+
+        class DbfFieldDescriptor : IFieldDescriptor
         {
             public int No { get; set; }
             public string Name { get; set; }
