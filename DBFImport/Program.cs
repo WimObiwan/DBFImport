@@ -194,19 +194,19 @@ namespace DBFImport
             Stopwatch sw = Stopwatch.StartNew();
             try
             {
-                using (DbfFileStream dbfFileStream = new DbfFileStream(filename, codepage))
+                using (IFileStream dbfFileStream = FileStreamFactory.Create(filename, codepage))
                 {
                     string table = Path.GetFileNameWithoutExtension(filename);
 
                     Console.WriteLine($"  LastUpdate:       {dbfFileStream.Header.LastUpdate.ToShortDateString()}");
                     Console.WriteLine($"  Fields:           {dbfFileStream.Header.FieldCount}");
-                    Console.WriteLine($"  Records:          {dbfFileStream.Header.RecordCount}");
+                    var recordCount = dbfFileStream.Header.RecordCount;
+                    if (recordCount.HasValue)
+                        Console.WriteLine($"  Records:          {recordCount.Value}");
                     Console.Write("  Importing:        ");
 
-                    (int insertCount, int deletedCount) = 
-                        CreateTable(connectionString, table, dbfFileStream.FieldDescriptors, dbfFileStream.Records, noBulkCopy);
+                    int insertCount = CreateTable(connectionString, table, dbfFileStream.FieldDescriptors, dbfFileStream.Records, noBulkCopy);
                     Console.WriteLine($"  Inserted:         {insertCount}");
-                    Console.WriteLine($"  MarkedAsDeleted:  {deletedCount}");
                     Console.WriteLine($"  Duration:         {sw.Elapsed}");
 
                     return insertCount;
@@ -224,8 +224,8 @@ namespace DBFImport
             }
         }
 
-        private static (int insertedCount, int deletedCount) CreateTable(string connectionString, string table, 
-            IReadOnlyList<DbfFieldDescriptor> fieldDescriptors, IEnumerable<DbfRecord> records,
+        private static int CreateTable(string connectionString, string table, 
+            IReadOnlyList<IFieldDescriptor> fieldDescriptors, IEnumerable<Record> records,
             bool noBulkCopy)
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -291,51 +291,14 @@ namespace DBFImport
             }
         }
 
-        private static (int insertedCount, int deletedCount) FillTableUsingBulkCopy(
-            SqlConnection conn, string table, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
-            IEnumerable<DbfRecord> records)
+        private static int FillTableUsingBulkCopy(
+            SqlConnection conn, string table, IReadOnlyList<IFieldDescriptor> fieldDescriptors,
+            IEnumerable<Record> records)
         {
             using (SqlBulkCopy bcp =  new SqlBulkCopy(conn))
             {
                 bcp.DestinationTableName = $"[{table}]";
                 bcp.BulkCopyTimeout = 1800;
-
-                //DataTable dataTable = new DataTable();
-
-                //foreach (var fieldDescriptor in fieldDescriptors)
-                //{
-                //    dataTable.Columns.Add(fieldDescriptor.Name, fieldDescriptor.GetDataType());
-                //}
-
-                //int insertCount = 0, deletedCount = 0;
-                //foreach (var record in records)
-                //{
-                //    if (record.Deleted)
-                //    {
-                //        deletedCount++;
-                //        continue;
-                //    }
-
-                //    var row = dataTable.NewRow();
-
-                //    for (int col = 0; col < fieldDescriptors.Count; col++)
-                //    {
-                //        row[col] = record.Fields[col] ?? DBNull.Value; ;
-                //    }
-
-                //    dataTable.Rows.Add(row);
-                //    insertCount++;
-
-                //    if (insertCount % 1000 == 0)
-                //    {
-                //        Console.Write('.');
-                //    }
-                //}
-                //Console.WriteLine();
-
-                //bcp.WriteToServer(dataReader);
-
-                //return (dataReader.Inserted, dataReader.Deleted);
 
                 DataReader dataReader = new DataReader(fieldDescriptors, records);
 
@@ -351,13 +314,13 @@ namespace DBFImport
                     Console.WriteLine();
                 }
 
-                return (dataReader.Inserted, dataReader.Deleted);
+                return dataReader.Inserted;
             }
         }
 
-        private static (int insertedCount, int deletedCount) FillTableUsingSqlCommand(
-            SqlConnection conn, string table, IReadOnlyList<DbfFieldDescriptor> fieldDescriptors,
-            IEnumerable<DbfRecord> records)
+        private static int FillTableUsingSqlCommand(
+            SqlConnection conn, string table, IReadOnlyList<IFieldDescriptor> fieldDescriptors,
+            IEnumerable<Record> records)
         {
             using (SqlCommand cmd = conn.CreateCommand())
             {
@@ -391,17 +354,11 @@ namespace DBFImport
 
                 sb.AppendLine($")");
                 cmd.CommandText = sb.ToString();
-                int insertCount = 0, deletedCount = 0;
+                int insertCount = 0;
                 using (var transaction = conn.BeginTransaction())
                 {
                     foreach (var record in records)
                     {
-                        if (record.Deleted)
-                        {
-                            deletedCount++;
-                            continue;
-                        }
-
                         try
                         {
                             no = 0;
@@ -432,7 +389,7 @@ namespace DBFImport
                     transaction.Commit();
                 }
 
-                return (insertCount, deletedCount);
+                return insertCount;
             }
         }
     }

@@ -7,13 +7,11 @@ namespace DBFImport
 {
     internal class DataReader : IDataReader
     {
-        private IReadOnlyList<DbfFieldDescriptor> fieldDescriptors;
-        private IEnumerator<DbfRecord> records;
+        private IReadOnlyList<IFieldDescriptor> fieldDescriptors;
+        private IEnumerator<Record> records;
 
         public int Inserted { get; private set; }
-        public int Deleted { get; private set; }
-
-        public DataReader(IReadOnlyList<DbfFieldDescriptor> fieldDescriptors, IEnumerable<DbfRecord> records)
+        public DataReader(IReadOnlyList<IFieldDescriptor> fieldDescriptors, IEnumerable<Record> records)
         {
             this.fieldDescriptors = fieldDescriptors;
             this.records = records.GetEnumerator();
@@ -160,18 +158,11 @@ namespace DBFImport
             if (IsClosed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            while (records.MoveNext())
-            {
-                if (!records.Current.Deleted)
-                {
-                    Inserted++;
-                    return true;
-                }
+            bool moveNextResult = records.MoveNext();
+            if (moveNextResult)
+                Inserted++;
 
-                Deleted++;
-            }
-
-            return false;
+            return moveNextResult;
         }
 
         public int Depth { get; }
