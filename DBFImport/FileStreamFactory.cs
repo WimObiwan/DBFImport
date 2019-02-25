@@ -14,6 +14,8 @@ namespace DBFImport
             string ext = Path.GetExtension(filename);
             if (ext.Equals(".dbf", StringComparison.InvariantCultureIgnoreCase)) {
                 return new DbfFileStream(filename, codepage);
+            } else if (ext.Equals(".xlsx", StringComparison.InvariantCultureIgnoreCase)) {
+                return new XlsFileStream(filename);
             } else {
                 throw new NotSupportedException($"Unsupported file extension '{ext}'");
             }
