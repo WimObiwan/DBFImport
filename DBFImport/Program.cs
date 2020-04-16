@@ -37,6 +37,9 @@ namespace DBFImport
             [Option("nobulkcopy", Required = false, HelpText = "Use much slower 'SQL Command' interface, instead of 'SQL BulkCopy'")]
             public bool NoBulkCopy { get; set; }
 
+            [Option("nologo", Required = false, HelpText = "Don't show application title and copyright")]
+            public bool NoLogo { get; set; }
+
             [Usage]
             public static IEnumerable<Example> Examples
             {
@@ -91,8 +94,11 @@ namespace DBFImport
 
         private static int RunWithOptions(Options options)
         {
-            Console.WriteLine(CommandLine.Text.HeadingInfo.Default.ToString());
-            Console.WriteLine(CommandLine.Text.CopyrightInfo.Default.ToString());
+            if (!options.NoLogo)
+            {
+                Console.WriteLine(CommandLine.Text.HeadingInfo.Default.ToString());
+                Console.WriteLine(CommandLine.Text.CopyrightInfo.Default.ToString());
+            }
 
             string dbfPath = options.DbfPath;
 
