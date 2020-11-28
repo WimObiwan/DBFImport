@@ -1,11 +1,14 @@
 # DBFImport
-A simple tool to import old DBF files into SQL Server.
+A simple, blazing fast tool to import Excel files and old DBF files into SQL Server.
 
 DBF files were/are used by 
  * dBase (Ashton Tate)
  * FoxBASE/FoxPro (Fox Software) / Visual FoxPro (Microsoft)
  * Clipper (Nantucket / Computer Associates)
  * ...
+
+Support for Excel files has been added:
+ * Since datatypes in Excel are quite fuzzy, the datatypes must be specified explicitly in the second row.
 
 Built on DotNet Core 2.1, works on Windows, Linux, Mac.
 
